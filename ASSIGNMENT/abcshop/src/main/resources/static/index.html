@@ -1,0 +1,461 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABCShop Management</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 30px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #1e3a5f;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .sell-button {
+            background: #16a34a;
+        }
+
+        .sell-button:hover {
+            background: #15803d;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 14px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .empty {
+            text-align: center;
+            color: #888;
+            padding: 25px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>ABCShop Management System</h1>
+    <p class="subtitle">Product and Sales Management</p>
+
+    <div id="message" class="message"></div>
+
+    <!-- Product List -->
+    <div class="card">
+        <h2>Product List</h2>
+
+        <button onclick="loadProducts()">Refresh Products</button>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+
+                <tbody id="productTable">
+                    <tr>
+                        <td colspan="4" class="empty">
+                            Loading products...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Product -->
+    <div class="card">
+        <h2>Add Product</h2>
+
+        <form id="addProductForm">
+
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label for="productName">Product Name</label>
+                    <input
+                        type="text"
+                        id="productName"
+                        placeholder="Enter product name"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="productPrice">Price</label>
+                    <input
+                        type="number"
+                        id="productPrice"
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter price"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="productQuantity">Quantity</label>
+                    <input
+                        type="number"
+                        id="productQuantity"
+                        min="0"
+                        step="1"
+                        placeholder="Enter quantity"
+                        required
+                    >
+                </div>
+
+                <button type="submit">Add Product</button>
+
+            </div>
+        </form>
+    </div>
+
+    <!-- Sell Product -->
+    <div class="card">
+        <h2>Sell Product</h2>
+
+        <form id="sellProductForm">
+
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label for="sellProduct">Select Product</label>
+                    <select id="sellProduct" required>
+                        <option value="">Select a product</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sellQuantity">Selling Quantity</label>
+                    <input
+                        type="number"
+                        id="sellQuantity"
+                        min="1"
+                        step="1"
+                        placeholder="Enter quantity"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="sell-button">
+                    Sell Product
+                </button>
+
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = "/api/products";
+
+    // Display messages
+    function showMessage(message, type) {
+        const element = document.getElementById("message");
+
+        element.textContent = message;
+        element.className = "message " + type;
+        element.style.display = "block";
+    }
+
+    // Handle API errors
+    async function getErrorMessage(response) {
+        try {
+            const data = await response.json();
+            return data.message || "Something went wrong";
+        } catch {
+            return "Request failed: " + response.status;
+        }
+    }
+
+    // 1. Get all products
+    async function loadProducts() {
+        try {
+            const response = await fetch(API_URL);
+
+            if (!response.ok) {
+                throw new Error(await getErrorMessage(response));
+            }
+
+            const products = await response.json();
+
+            const table = document.getElementById("productTable");
+            const dropdown = document.getElementById("sellProduct");
+
+            table.innerHTML = "";
+            dropdown.innerHTML = '<option value="">Select a product</option>';
+
+            if (products.length === 0) {
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="empty">
+                            No products found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            products.forEach(product => {
+
+                const row = document.createElement("tr");
+
+                const values = [
+                    product.id,
+                    product.name,
+                    Number(product.price).toFixed(2),
+                    product.quantity
+                ];
+
+                values.forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                table.appendChild(row);
+
+                const option = document.createElement("option");
+
+                option.value = product.id;
+                option.textContent =
+                    product.name + " (Stock: " + product.quantity + ")";
+
+                dropdown.appendChild(option);
+            });
+
+        } catch (error) {
+            showMessage(error.message, "error");
+        }
+    }
+
+    // 2. Add a product
+    document.getElementById("addProductForm")
+        .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const product = {
+            name: document.getElementById("productName").value.trim(),
+            price: Number(document.getElementById("productPrice").value),
+            quantity: Number(document.getElementById("productQuantity").value)
+        };
+
+        if (
+            !product.name ||
+            !Number.isFinite(product.price) ||
+            product.price < 0 ||
+            !Number.isInteger(product.quantity) ||
+            product.quantity < 0
+        ) {
+            showMessage("Please enter valid product information.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(product)
+            });
+
+            if (!response.ok) {
+                throw new Error(await getErrorMessage(response));
+            }
+
+            showMessage("Product added successfully!", "success");
+
+            this.reset();
+
+            await loadProducts();
+
+        } catch (error) {
+            showMessage(error.message, "error");
+        }
+    });
+
+    // 3. Sell a product
+    document.getElementById("sellProductForm")
+        .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const productId = document.getElementById("sellProduct").value;
+
+        const quantity = Number(
+            document.getElementById("sellQuantity").value
+        );
+
+        if (!productId || !Number.isInteger(quantity) || quantity <= 0) {
+            showMessage("Please select a product and enter a valid quantity.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                API_URL + "/" + productId + "/sell",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ quantity: quantity })
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(await getErrorMessage(response));
+            }
+
+            const updatedProduct = await response.json();
+
+            showMessage(
+                "Product sold successfully! Remaining stock: " +
+                updatedProduct.quantity,
+                "success"
+            );
+
+            this.reset();
+
+            await loadProducts();
+
+        } catch (error) {
+            showMessage(error.message, "error");
+        }
+    });
+
+    // Load products when the page opens
+    loadProducts();
+
+</script>
+
+</body>
+</html>
